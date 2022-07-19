@@ -4,9 +4,25 @@ import styles from '@styles/Event.module.css'
 import Link from 'next/link'
 import Image from 'next/image'
 import { FaPencilAlt, FaTimes } from 'react-icons/fa'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import { useRouter } from 'next/router'
 export default function SingleEventPage({ event }) {
-	const deleteEvent = e => {
-		console.log('delete')
+	const router = useRouter()
+
+	const deleteEvent = async e => {
+		if (confirm('Are you sure you want to delete this event?')) {
+			const res = await fetch(`${API_URL}/events/${event.id}`, {
+				method: 'DELETE',
+			})
+			const err = await res.statusText
+
+			if (!res.ok) {
+				toast.error(err)
+			} else {
+				router.push('/events')
+			}
+		}
 	}
 	return (
 		<Layout>
@@ -22,13 +38,14 @@ export default function SingleEventPage({ event }) {
 					</a>
 				</div>
 				<span>
-					{event.date} at {event.time}
+					{new Date(event.date).toLocaleDateString('tr-TR')} at {event.time}
 				</span>
 				<h1>{event.name}</h1>
+				<ToastContainer />
 				{event.image && (
 					<div className={styles.image}>
 						<Image
-							src={event.image}
+							src={event.image.formats.medium.url}
 							alt={event.slug}
 							width={960}
 							height={600}
@@ -50,7 +67,7 @@ export default function SingleEventPage({ event }) {
 	)
 }
 export async function getStaticPaths() {
-	const res = await fetch(`${API_URL}/api/v1/events`)
+	const res = await fetch(`${API_URL}/events`)
 	const events = await res.json()
 
 	const paths = events.map(event => ({
@@ -64,7 +81,7 @@ export async function getStaticPaths() {
 }
 
 export async function getStaticProps({ params: { slug } }) {
-	const res = await fetch(`${API_URL}/api/v1/events/${slug}`)
+	const res = await fetch(`${API_URL}/events?slug=${slug}`)
 	const events = await res.json()
 	return {
 		props: {
